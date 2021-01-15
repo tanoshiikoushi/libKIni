@@ -26,7 +26,7 @@ class KIniComment
 template <typename containing_type> class ListMember
 {
     private:
-        unsigned long long list_index;
+        uint32_t list_index;
         bool is_comment;
         containing_type* current_contained;
         KIniComment* current_comment;
@@ -34,20 +34,20 @@ template <typename containing_type> class ListMember
 
     public:
         //Getters and Setters
-        unsigned long long getListIndex() { return list_index; }
+        uint32_t getListIndex() { return list_index; }
         bool isComment() { return is_comment; }
         containing_type* getCurrentContained() { return current_contained; }
         KIniComment* getCurrentComment() { return current_comment; }
         ListMember<containing_type>* getNextListMember() { return next_list_member; }
 
-        void setListIndex(unsigned long long list_index) { this->list_index = list_index; }
+        void setListIndex(uint32_t list_index) { this->list_index = list_index; }
         void setIsComment(bool is_comment) { this->is_comment = is_comment; }
         void setCurrentContained(containing_type* contained) { this->current_contained = contained; }
         void setCurrentComment(KIniComment* comment) { this->current_comment = comment; }
         void setNextListMember(ListMember<containing_type>* list_member) { this->next_list_member = list_member; }
 
         //Constructor
-        ListMember(unsigned long long list_index, bool is_comment, containing_type* contained, KIniComment* current_comment, ListMember<containing_type>* next_list_member)
+        ListMember(uint32_t list_index, bool is_comment, containing_type* contained, KIniComment* current_comment, ListMember<containing_type>* next_list_member)
         {
             setListIndex(list_index);
             setIsComment(is_comment);
@@ -126,8 +126,19 @@ class KIniInstance
         }
 
         //Methods
-        bool insertPropertyAtIndex(unsigned long long index, KIniProperty* to_add);
-        bool insertCommentAtIndex(unsigned long long index, KIniComment* to_add);
+        bool insertPropertyAtIndex(uint32_t index, KIniProperty* to_add);
+        bool insertCommentAtIndex(uint32_t index, KIniComment* to_add);
+
+        void appendProperty(KIniProperty* to_add);
+        void appendComment(KIniComment* to_add);
+
+        ListMember<KIniProperty>* getMemberAtIndex(uint32_t index);
+
+        bool deleteMemberAtIndex(uint32_t index);
+
+        KIniProperty* queryPropertyByName(std::string prop_name);
+        KIniComment* queryCommentByString(std::string comm_string);
+
         std::string toString();
 };
 
@@ -162,8 +173,16 @@ class KIniElement
         }
 
         //Methods
-        bool insertInstanceAtIndex(unsigned long long index, KIniInstance* to_add);
-        bool insertCommentAtIndex(unsigned long long index, KIniComment* to_add);
+        bool insertInstanceAtIndex(uint32_t index, KIniInstance* to_add);
+        bool insertCommentAtIndex(uint32_t index, KIniComment* to_add);
+
+        void appendInstance(KIniInstance* to_add);
+        void appendComment(KIniComment* to_add);
+
+        ListMember<KIniInstance>* getMemberAtIndex(uint32_t index);
+
+        bool deleteMemberAtIndex(uint32_t index);
+
         std::string toString();
 };
 
@@ -194,8 +213,19 @@ class KIniRoot
         }
 
         //Methods
-        bool insertElementAtIndex(unsigned long long index, KIniElement* to_add);
-        bool insertCommentAtIndex(unsigned long long index, KIniComment* to_add);
+        bool insertElementAtIndex(uint32_t index, KIniElement* to_add);
+        bool insertCommentAtIndex(uint32_t index, KIniComment* to_add);
+
+        void appendElement(KIniElement* to_add);
+        void appendComment(KIniComment* to_add);
+
+        ListMember<KIniElement>* getMemberAtIndex(uint32_t index);
+
+        bool deleteMemberAtIndex(uint32_t index);
+
+        KIniElement* queryElementByName(std::string elem_name);
+        KIniComment* queryCommentByString(std::string comm_string);
+
         std::string toString();
 };
 

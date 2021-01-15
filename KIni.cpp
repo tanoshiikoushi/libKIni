@@ -52,6 +52,7 @@ std::string KIniElement::toString()
         }
         index = index->getNextListMember();
     }
+    out.append("\n");
     return out;
 }
 
@@ -76,7 +77,7 @@ std::string KIniRoot::toString()
 }
 
 // KIniInstance Methods
-bool KIniInstance::insertPropertyAtIndex(unsigned long long index, KIniProperty* to_add)
+bool KIniInstance::insertPropertyAtIndex(uint32_t index, KIniProperty* to_add)
 {
     ListMember<KIniProperty>* curr_index = getPropertyList();
 
@@ -91,10 +92,10 @@ bool KIniInstance::insertPropertyAtIndex(unsigned long long index, KIniProperty*
     }
     else
     {
-        unsigned long long ind = index;
+        uint32_t ind = index;
         while (ind > 1)
         {
-            if (curr_index->getNextListMember()) { return false; }
+            if (curr_index->getNextListMember() == nullptr) { return false; }
             else
             {
                 curr_index = curr_index->getNextListMember();
@@ -125,7 +126,7 @@ bool KIniInstance::insertPropertyAtIndex(unsigned long long index, KIniProperty*
     }
 }
 
-bool KIniInstance::insertCommentAtIndex(unsigned long long index, KIniComment* to_add)
+bool KIniInstance::insertCommentAtIndex(uint32_t index, KIniComment* to_add)
 {
     ListMember<KIniProperty>* curr_index = getPropertyList();
 
@@ -140,7 +141,7 @@ bool KIniInstance::insertCommentAtIndex(unsigned long long index, KIniComment* t
     }
     else
     {
-        unsigned long long ind = index;
+        uint32_t ind = index;
         while (ind > 1)
         {
             if (curr_index->getNextListMember() == nullptr) { return false; }
@@ -174,8 +175,188 @@ bool KIniInstance::insertCommentAtIndex(unsigned long long index, KIniComment* t
     }
 }
 
+void KIniInstance::appendProperty(KIniProperty* to_add)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setPropertyList(new ListMember<KIniProperty>(0, false, to_add, nullptr, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniProperty>(curr_id+1, false, to_add, nullptr, nullptr));
+    }
+}
+
+void KIniInstance::appendComment(KIniComment* to_add)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setPropertyList(new ListMember<KIniProperty>(0, true, nullptr, to_add, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniProperty>(curr_id+1, true, nullptr, to_add, nullptr));
+    }
+}
+
+ListMember<KIniProperty>* KIniInstance::getMemberAtIndex(uint32_t index)
+{
+    uint32_t ind = 0;
+    ListMember<KIniProperty>* curr = getPropertyList();
+    while (ind < index)
+    {
+        if (curr->getNextListMember() != nullptr)
+        {
+            ind++;
+            curr = curr->getNextListMember();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    return curr;
+}
+
+bool KIniInstance::deleteMemberAtIndex(uint32_t index)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+
+    if (curr_index == nullptr)
+    {
+        return false;
+    }
+    else if (index == 0)
+    {
+        ListMember<KIniProperty>* to_delete = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            setPropertyList(nullptr);
+            return true;
+        }
+
+        curr_index = to_delete->getNextListMember();
+        setPropertyList(curr_index);
+
+        to_delete->setNextListMember(nullptr);
+        delete to_delete;
+
+        curr_index->setListIndex(curr_index->getListIndex()-1);
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_index->setListIndex(curr_index->getListIndex()-1);
+        }
+
+        return true;
+    }
+    else
+    {
+        uint32_t ind = 0;
+
+        while (ind < (index-1))
+        {
+            if (curr_index->getNextListMember() == nullptr) { return false; }
+            curr_index = curr_index->getNextListMember();
+            ind++;
+        }
+
+        ListMember<KIniProperty>* prior = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            ListMember<KIniProperty>* to_delete = curr_index->getNextListMember();
+
+            if (to_delete->getNextListMember() == nullptr)
+            {
+                prior->setNextListMember(nullptr);
+                delete to_delete;
+
+                return true;
+            }
+            else
+            {
+                curr_index = to_delete->getNextListMember();
+
+                prior->setNextListMember(curr_index);
+                to_delete->setNextListMember(nullptr);
+                delete to_delete;
+                curr_index->setListIndex(curr_index->getListIndex()-1);
+
+                while (curr_index->getNextListMember() != nullptr)
+                {
+                    curr_index = curr_index->getNextListMember();
+                    curr_index->setListIndex(curr_index->getListIndex()-1);
+                }
+
+                return true;
+            }
+        }
+    }
+}
+
+KIniProperty* KIniInstance::queryPropertyByName(std::string prop_name)
+{
+    ListMember<KIniProperty>* curr = getPropertyList();
+
+    while (curr != nullptr)
+    {
+        if (!curr->isComment())
+        {
+            if (prop_name.compare(curr->getCurrentContained()->getPropertyName()) == 0)
+            {
+                return curr->getCurrentContained();
+            }
+        }
+        curr = curr->getNextListMember();
+    }
+    return nullptr;
+}
+
+KIniComment* KIniInstance::queryCommentByString(std::string comm_name)
+{
+    ListMember<KIniProperty>* curr = getPropertyList();
+
+    while (curr != nullptr)
+    {
+        if (curr->isComment())
+        {
+            if (curr->getCurrentComment()->getValue().find(comm_name) != std::string::npos)
+            {
+                return curr->getCurrentComment();
+            }
+        }
+        curr = curr->getNextListMember();
+    }
+    return nullptr;
+}
+
 // KIniElement Methods
-bool KIniElement::insertInstanceAtIndex(unsigned long long index, KIniInstance* to_add)
+bool KIniElement::insertInstanceAtIndex(uint32_t index, KIniInstance* to_add)
 {
     ListMember<KIniInstance>* curr_index = getInstanceList();
 
@@ -190,10 +371,10 @@ bool KIniElement::insertInstanceAtIndex(unsigned long long index, KIniInstance* 
     }
     else
     {
-        unsigned long long ind = index;
+        uint32_t ind = index;
         while (ind > 1)
         {
-            if (curr_index->getNextListMember()) { return false; }
+            if (curr_index->getNextListMember() == nullptr) { return false; }
             else
             {
                 curr_index = curr_index->getNextListMember();
@@ -224,7 +405,7 @@ bool KIniElement::insertInstanceAtIndex(unsigned long long index, KIniInstance* 
     }
 }
 
-bool KIniElement::insertCommentAtIndex(unsigned long long index, KIniComment* to_add)
+bool KIniElement::insertCommentAtIndex(uint32_t index, KIniComment* to_add)
 {
     ListMember<KIniInstance>* curr_index = getInstanceList();
 
@@ -239,10 +420,10 @@ bool KIniElement::insertCommentAtIndex(unsigned long long index, KIniComment* to
     }
     else
     {
-        unsigned long long ind = index;
+        uint32_t ind = index;
         while (ind > 1)
         {
-            if (curr_index->getNextListMember()) { return false; }
+            if (curr_index->getNextListMember() == nullptr) { return false; }
             else
             {
                 curr_index = curr_index->getNextListMember();
@@ -273,8 +454,152 @@ bool KIniElement::insertCommentAtIndex(unsigned long long index, KIniComment* to
     }
 }
 
+void KIniElement::appendInstance(KIniInstance* to_add)
+{
+    ListMember<KIniInstance>* curr_index = getInstanceList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setInstanceList(new ListMember<KIniInstance>(0, false, to_add, nullptr, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniInstance>(curr_id+1, false, to_add, nullptr, nullptr));
+    }
+}
+
+void KIniElement::appendComment(KIniComment* to_add)
+{
+    ListMember<KIniInstance>* curr_index = getInstanceList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setInstanceList(new ListMember<KIniInstance>(0, true, nullptr, to_add, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniInstance>(curr_id+1, true, nullptr, to_add, nullptr));
+    }
+}
+
+ListMember<KIniInstance>* KIniElement::getMemberAtIndex(uint32_t index)
+{
+    uint32_t ind = 0;
+    ListMember<KIniInstance>* curr = getInstanceList();
+    while (ind < index)
+    {
+        if (curr->getNextListMember() != nullptr)
+        {
+            ind++;
+            curr = curr->getNextListMember();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    return curr;
+}
+
+bool KIniElement::deleteMemberAtIndex(uint32_t index)
+{
+    ListMember<KIniInstance>* curr_index = getInstanceList();
+
+    if (curr_index == nullptr)
+    {
+        return false;
+    }
+    else if (index == 0)
+    {
+        ListMember<KIniInstance>* to_delete = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            setInstanceList(nullptr);
+            return true;
+        }
+
+        curr_index = to_delete->getNextListMember();
+        setInstanceList(curr_index);
+
+        to_delete->setNextListMember(nullptr);
+        delete to_delete;
+
+        curr_index->setListIndex(curr_index->getListIndex()-1);
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_index->setListIndex(curr_index->getListIndex()-1);
+        }
+
+        return true;
+    }
+    else
+    {
+        uint32_t ind = 0;
+
+        while (ind < (index-1))
+        {
+            if (curr_index->getNextListMember() == nullptr) { return false; }
+            curr_index = curr_index->getNextListMember();
+            ind++;
+        }
+
+        ListMember<KIniInstance>* prior = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            ListMember<KIniInstance>* to_delete = curr_index->getNextListMember();
+
+            if (to_delete->getNextListMember() == nullptr)
+            {
+                prior->setNextListMember(nullptr);
+                delete to_delete;
+
+                return true;
+            }
+            else
+            {
+                curr_index = to_delete->getNextListMember();
+
+                prior->setNextListMember(curr_index);
+                to_delete->setNextListMember(nullptr);
+                delete to_delete;
+                curr_index->setListIndex(curr_index->getListIndex()-1);
+
+                while (curr_index->getNextListMember() != nullptr)
+                {
+                    curr_index = curr_index->getNextListMember();
+                    curr_index->setListIndex(curr_index->getListIndex()-1);
+                }
+
+                return true;
+            }
+        }
+    }
+}
+
 // KIniRoot Methods
-bool KIniRoot::insertElementAtIndex(unsigned long long index, KIniElement* to_add)
+bool KIniRoot::insertElementAtIndex(uint32_t index, KIniElement* to_add)
 {
     ListMember<KIniElement>* curr_index = getElementList();
 
@@ -289,10 +614,10 @@ bool KIniRoot::insertElementAtIndex(unsigned long long index, KIniElement* to_ad
     }
     else
     {
-        unsigned long long ind = index;
+        uint32_t ind = index;
         while (ind > 1)
         {
-            if (curr_index->getNextListMember()) { return false; }
+            if (curr_index->getNextListMember() == nullptr) { return false; }
             else
             {
                 curr_index = curr_index->getNextListMember();
@@ -323,7 +648,7 @@ bool KIniRoot::insertElementAtIndex(unsigned long long index, KIniElement* to_ad
     }
 }
 
-bool KIniRoot::insertCommentAtIndex(unsigned long long index, KIniComment* to_add)
+bool KIniRoot::insertCommentAtIndex(uint32_t index, KIniComment* to_add)
 {
     ListMember<KIniElement>* curr_index = getElementList();
 
@@ -338,10 +663,10 @@ bool KIniRoot::insertCommentAtIndex(unsigned long long index, KIniComment* to_ad
     }
     else
     {
-        unsigned long long ind = index;
+        uint32_t ind = index;
         while (ind > 1)
         {
-            if (curr_index->getNextListMember()) { return false; }
+            if (curr_index->getNextListMember() == nullptr) { return false; }
             else
             {
                 curr_index = curr_index->getNextListMember();
@@ -370,4 +695,184 @@ bool KIniRoot::insertCommentAtIndex(unsigned long long index, KIniComment* to_ad
         }
         return true;
     }
+}
+
+void KIniRoot::appendElement(KIniElement* to_add)
+{
+    ListMember<KIniElement>* curr_index = getElementList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setElementList(new ListMember<KIniElement>(0, false, to_add, nullptr, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniElement>(curr_id+1, false, to_add, nullptr, nullptr));
+    }
+}
+
+void KIniRoot::appendComment(KIniComment* to_add)
+{
+    ListMember<KIniElement>* curr_index = getElementList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setElementList(new ListMember<KIniElement>(0, true, nullptr, to_add, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniElement>(curr_id+1, true, nullptr, to_add, nullptr));
+    }
+}
+
+ListMember<KIniElement>* KIniRoot::getMemberAtIndex(uint32_t index)
+{
+    uint32_t ind = 0;
+    ListMember<KIniElement>* curr = getElementList();
+    while (ind < index)
+    {
+        if (curr->getNextListMember() != nullptr)
+        {
+            ind++;
+            curr = curr->getNextListMember();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    return curr;
+}
+
+bool KIniRoot::deleteMemberAtIndex(uint32_t index)
+{
+    ListMember<KIniElement>* curr_index = getElementList();
+
+    if (curr_index == nullptr)
+    {
+        return false;
+    }
+    else if (index == 0)
+    {
+        ListMember<KIniElement>* to_delete = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            setElementList(nullptr);
+            return true;
+        }
+
+        curr_index = to_delete->getNextListMember();
+        setElementList(curr_index);
+
+        to_delete->setNextListMember(nullptr);
+        delete to_delete;
+
+        curr_index->setListIndex(curr_index->getListIndex()-1);
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_index->setListIndex(curr_index->getListIndex()-1);
+        }
+
+        return true;
+    }
+    else
+    {
+        uint32_t ind = 0;
+
+        while (ind < (index-1))
+        {
+            if (curr_index->getNextListMember() == nullptr) { return false; }
+            curr_index = curr_index->getNextListMember();
+            ind++;
+        }
+
+        ListMember<KIniElement>* prior = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            ListMember<KIniElement>* to_delete = curr_index->getNextListMember();
+
+            if (to_delete->getNextListMember() == nullptr)
+            {
+                prior->setNextListMember(nullptr);
+                delete to_delete;
+
+                return true;
+            }
+            else
+            {
+                curr_index = to_delete->getNextListMember();
+
+                prior->setNextListMember(curr_index);
+                to_delete->setNextListMember(nullptr);
+                delete to_delete;
+                curr_index->setListIndex(curr_index->getListIndex()-1);
+
+                while (curr_index->getNextListMember() != nullptr)
+                {
+                    curr_index = curr_index->getNextListMember();
+                    curr_index->setListIndex(curr_index->getListIndex()-1);
+                }
+
+                return true;
+            }
+        }
+    }
+}
+
+KIniElement* KIniRoot::queryElementByName(std::string elem_name)
+{
+    ListMember<KIniElement>* curr = getElementList();
+
+    while (curr != nullptr)
+    {
+        if (!curr->isComment())
+        {
+            if (elem_name.compare(curr->getCurrentContained()->getElementName()) == 0)
+            {
+                return curr->getCurrentContained();
+            }
+        }
+        curr = curr->getNextListMember();
+    }
+    return nullptr;
+}
+
+KIniComment* KIniRoot::queryCommentByString(std::string comm_name)
+{
+    ListMember<KIniElement>* curr = getElementList();
+
+    while (curr != nullptr)
+    {
+        if (curr->isComment())
+        {
+            if (curr->getCurrentComment()->getValue().find(comm_name) != std::string::npos)
+            {
+                return curr->getCurrentComment();
+            }
+        }
+        curr = curr->getNextListMember();
+    }
+    return nullptr;
 }
