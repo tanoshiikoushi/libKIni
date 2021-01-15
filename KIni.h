@@ -75,24 +75,89 @@ template <typename containing_type> class ListMember
         }
 };
 
+class KIniProperty;
+
+// Do note that nested events (i.e. properties containing events within an event)
+//  are not intended and will result in incorrect output
+class KIniEvent
+{
+    private:
+        ListMember<KIniProperty>* property_list;
+
+    public:
+        //Getters and Setters
+        ListMember<KIniProperty>* getPropertyList() { return property_list; }
+
+        void setPropertyList(ListMember<KIniProperty>* property_list) { this->property_list = property_list; }
+
+        //Constructor
+        KIniEvent(ListMember<KIniProperty>* property_list)
+        {
+            setPropertyList(property_list);
+        }
+
+        //Destructor
+        ~KIniEvent()
+        {
+            if (property_list != nullptr)
+            {
+                delete property_list;
+            }
+        }
+
+        //Methods
+        bool insertPropertyAtIndex(uint32_t index, KIniProperty* to_add);
+        bool insertCommentAtIndex(uint32_t index, KIniComment* to_add);
+
+        void appendProperty(KIniProperty* to_add);
+        void appendComment(KIniComment* to_add);
+
+        ListMember<KIniProperty>* getMemberAtIndex(uint32_t index);
+
+        bool deleteMemberAtIndex(uint32_t index);
+
+        KIniProperty* queryPropertyByName(std::string prop_name);
+        KIniComment* queryCommentByString(std::string comm_string);
+
+        std::string toString();
+};
+
 class KIniProperty
 {
     private:
+        bool is_event;
+        KIniEvent* event;
         std::string name;
         std::string value;
 
     public:
         //Getters and Setters
+        bool isEvent() { return is_event; }
+        KIniEvent* getEvent() { return event; }
         std::string getPropertyName() { return name; }
         std::string getPropertyValue() { return value; }
+
+        void setIsEvent(bool is_event) { this->is_event = is_event; }
+        void setEvent(KIniEvent* event) { this->event = event; }
         void setPropertyName(std::string name) { this->name = name; }
         void setPropertyValue(std::string value) { this->value = value; }
 
         //Constructor
-        KIniProperty(std::string property_name, std::string property_value)
+        KIniProperty(bool is_event, std::string property_name, std::string property_value, KIniEvent* event)
         {
+            setIsEvent(is_event);
+            setEvent(event);
             setPropertyName(property_name);
             setPropertyValue(property_value);
+        }
+
+        //Destructor
+        ~KIniProperty()
+        {
+            if (isEvent())
+            {
+                delete event;
+            }
         }
 
         //Methods

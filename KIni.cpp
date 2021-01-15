@@ -4,12 +4,40 @@
 // toString Methods
 std::string KIniComment::toString()
 {
-    return "//" + getValue() + "\n";
+    return "// " + getValue() + "\n";
+}
+
+std::string KIniEvent::toString()
+{
+    std::string out = "";
+    ListMember<KIniProperty>* index = getPropertyList();
+
+    while (index != nullptr)
+    {
+        if (index->isComment())
+        {
+            out.append("  " + index->getCurrentComment()->toString());
+        }
+        else
+        {
+            out.append("  " + index->getCurrentContained()->toString());
+        }
+        index = index->getNextListMember();
+    }
+    out.append("\n");
+    return out;
 }
 
 std::string KIniProperty::toString()
 {
-    return getPropertyName() + " = " + getPropertyValue() + "\n";
+    if (isEvent())
+    {
+        return getPropertyName() + " = event\n" + getEvent()->toString();
+    }
+    else
+    {
+        return getPropertyName() + " = " + getPropertyValue() + "\n";
+    }
 }
 
 std::string KIniInstance::toString()
@@ -74,6 +102,285 @@ std::string KIniRoot::toString()
         index = index->getNextListMember();
     }
     return out;
+}
+
+// KIniEvent Methods
+bool KIniEvent::insertPropertyAtIndex(uint32_t index, KIniProperty* to_add)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+
+    if (curr_index == nullptr)
+    {
+        if (index == 0)
+        {
+            setPropertyList(new ListMember<KIniProperty>(0, false, to_add, nullptr, nullptr));
+            return true;
+        }
+        else { return false; }
+    }
+    else
+    {
+        uint32_t ind = index;
+        while (ind > 1)
+        {
+            if (curr_index->getNextListMember() == nullptr) { return false; }
+            else
+            {
+                curr_index = curr_index->getNextListMember();
+                ind--;
+            }
+        }
+
+        ListMember<KIniProperty>* prior = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            prior->setNextListMember(new ListMember<KIniProperty>(index, false, to_add, nullptr, nullptr));
+        }
+        else
+        {
+            curr_index = curr_index->getNextListMember();
+            prior->setNextListMember(new ListMember<KIniProperty>(index, false, to_add, nullptr, curr_index));
+
+            curr_index->setListIndex(curr_index->getListIndex()+1);
+
+            while (curr_index->getNextListMember() != nullptr)
+            {
+                curr_index = curr_index->getNextListMember();
+                curr_index->setListIndex(curr_index->getListIndex()+1);
+            }
+        }
+        return true;
+    }
+}
+
+bool KIniEvent::insertCommentAtIndex(uint32_t index, KIniComment* to_add)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+
+    if (curr_index == nullptr)
+    {
+        if (index == 0)
+        {
+            setPropertyList(new ListMember<KIniProperty>(0, true, nullptr, to_add, nullptr));
+            return true;
+        }
+        else { return false; }
+    }
+    else
+    {
+        uint32_t ind = index;
+        while (ind > 1)
+        {
+            if (curr_index->getNextListMember() == nullptr) { return false; }
+            else
+            {
+                curr_index = curr_index->getNextListMember();
+                ind--;
+            }
+        }
+
+        ListMember<KIniProperty>* prior = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            prior->setNextListMember(new ListMember<KIniProperty>(index, true, nullptr, to_add, nullptr));
+        }
+        else
+        {
+            curr_index = curr_index->getNextListMember();
+            prior->setNextListMember(new ListMember<KIniProperty>(index, true, nullptr, to_add, curr_index));
+
+            curr_index->setListIndex(curr_index->getListIndex()+1);
+
+            while (curr_index->getNextListMember() != nullptr)
+            {
+                curr_index = curr_index->getNextListMember();
+                curr_index->setListIndex(curr_index->getListIndex()+1);
+            }
+        }
+        return true;
+    }
+}
+
+void KIniEvent::appendProperty(KIniProperty* to_add)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setPropertyList(new ListMember<KIniProperty>(0, false, to_add, nullptr, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniProperty>(curr_id+1, false, to_add, nullptr, nullptr));
+    }
+}
+
+void KIniEvent::appendComment(KIniComment* to_add)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+    uint32_t curr_id = 0;
+
+    if (curr_index == nullptr)
+    {
+        setPropertyList(new ListMember<KIniProperty>(0, true, nullptr, to_add, nullptr));
+    }
+    else
+    {
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_id++;
+        }
+
+        curr_index->setNextListMember(new ListMember<KIniProperty>(curr_id+1, true, nullptr, to_add, nullptr));
+    }
+}
+
+ListMember<KIniProperty>* KIniEvent::getMemberAtIndex(uint32_t index)
+{
+    uint32_t ind = 0;
+    ListMember<KIniProperty>* curr = getPropertyList();
+    while (ind < index)
+    {
+        if (curr->getNextListMember() != nullptr)
+        {
+            ind++;
+            curr = curr->getNextListMember();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    return curr;
+}
+
+bool KIniEvent::deleteMemberAtIndex(uint32_t index)
+{
+    ListMember<KIniProperty>* curr_index = getPropertyList();
+
+    if (curr_index == nullptr)
+    {
+        return false;
+    }
+    else if (index == 0)
+    {
+        ListMember<KIniProperty>* to_delete = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            setPropertyList(nullptr);
+            return true;
+        }
+
+        curr_index = to_delete->getNextListMember();
+        setPropertyList(curr_index);
+
+        to_delete->setNextListMember(nullptr);
+        delete to_delete;
+
+        curr_index->setListIndex(curr_index->getListIndex()-1);
+        while (curr_index->getNextListMember() != nullptr)
+        {
+            curr_index = curr_index->getNextListMember();
+            curr_index->setListIndex(curr_index->getListIndex()-1);
+        }
+
+        return true;
+    }
+    else
+    {
+        uint32_t ind = 0;
+
+        while (ind < (index-1))
+        {
+            if (curr_index->getNextListMember() == nullptr) { return false; }
+            curr_index = curr_index->getNextListMember();
+            ind++;
+        }
+
+        ListMember<KIniProperty>* prior = curr_index;
+
+        if (curr_index->getNextListMember() == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            ListMember<KIniProperty>* to_delete = curr_index->getNextListMember();
+
+            if (to_delete->getNextListMember() == nullptr)
+            {
+                prior->setNextListMember(nullptr);
+                delete to_delete;
+
+                return true;
+            }
+            else
+            {
+                curr_index = to_delete->getNextListMember();
+
+                prior->setNextListMember(curr_index);
+                to_delete->setNextListMember(nullptr);
+                delete to_delete;
+                curr_index->setListIndex(curr_index->getListIndex()-1);
+
+                while (curr_index->getNextListMember() != nullptr)
+                {
+                    curr_index = curr_index->getNextListMember();
+                    curr_index->setListIndex(curr_index->getListIndex()-1);
+                }
+
+                return true;
+            }
+        }
+    }
+}
+
+KIniProperty* KIniEvent::queryPropertyByName(std::string prop_name)
+{
+    ListMember<KIniProperty>* curr = getPropertyList();
+
+    while (curr != nullptr)
+    {
+        if (!curr->isComment())
+        {
+            if (prop_name.compare(curr->getCurrentContained()->getPropertyName()) == 0)
+            {
+                return curr->getCurrentContained();
+            }
+        }
+        curr = curr->getNextListMember();
+    }
+    return nullptr;
+}
+
+KIniComment* KIniEvent::queryCommentByString(std::string comm_name)
+{
+    ListMember<KIniProperty>* curr = getPropertyList();
+
+    while (curr != nullptr)
+    {
+        if (curr->isComment())
+        {
+            if (curr->getCurrentComment()->getValue().find(comm_name) != std::string::npos)
+            {
+                return curr->getCurrentComment();
+            }
+        }
+        curr = curr->getNextListMember();
+    }
+    return nullptr;
 }
 
 // KIniInstance Methods
