@@ -1,6 +1,11 @@
 #ifndef KINI_H_INCLUDED
 
 #include <string>
+#include <fstream>
+
+
+const uint16_t KINI_BUFFER_IN_SIZE = 1024;
+const uint16_t KINI_PROPERTY_MULTIVALUE_MAX = 16;
 
 class KIniComment
 {
@@ -127,6 +132,12 @@ class KIniProperty
     private:
         bool is_event;
         KIniEvent* event;
+
+        bool is_multivalue;
+        bool is_double_space;
+        std::string* multivalues = new std::string[KINI_PROPERTY_MULTIVALUE_MAX];
+        uint8_t multivalue_count;
+
         std::string name;
         std::string value;
 
@@ -134,19 +145,31 @@ class KIniProperty
         //Getters and Setters
         bool isEvent() { return is_event; }
         KIniEvent* getEvent() { return event; }
+        bool isMultivalue() { return is_multivalue; }
+        bool isDoubleSpace() { return is_double_space; }
+        std::string* getMultivalues() { return multivalues; }
+        uint8_t getMultivalueCount() { return multivalue_count; }
         std::string getPropertyName() { return name; }
         std::string getPropertyValue() { return value; }
 
         void setIsEvent(bool is_event) { this->is_event = is_event; }
         void setEvent(KIniEvent* event) { this->event = event; }
+        void setIsMultivalue(bool multivalue) { this->is_multivalue = multivalue; }
+        void setIsDoubleSpace(bool double_space) { this->is_double_space = double_space; }
+        void setMultivalues(std::string* multivalues) { this->multivalues = multivalues; }
+        void setMultivalueCount(uint8_t multivalue_count) { this->multivalue_count = multivalue_count; }
         void setPropertyName(std::string name) { this->name = name; }
         void setPropertyValue(std::string value) { this->value = value; }
 
         //Constructor
-        KIniProperty(bool is_event, std::string property_name, std::string property_value, KIniEvent* event)
+        KIniProperty(bool is_event, bool is_multivalue, bool is_double_space, std::string property_name, std::string property_value, KIniEvent* event, std::string* multivalues, uint8_t multivalue_count)
         {
             setIsEvent(is_event);
             setEvent(event);
+            setIsDoubleSpace(is_double_space);
+            setIsMultivalue(is_multivalue);
+            setMultivalues(multivalues);
+            setMultivalueCount(multivalue_count);
             setPropertyName(property_name);
             setPropertyValue(property_value);
         }
@@ -157,6 +180,10 @@ class KIniProperty
             if (isEvent())
             {
                 delete event;
+            }
+            else if (isMultivalue())
+            {
+                delete[] multivalues;
             }
         }
 
@@ -293,6 +320,12 @@ class KIniRoot
 
         std::string toString();
 };
+
+
+std::string* generateMultivalueDefault();
+
+// Only pass an empty root or else you will get combined KIni files
+bool parseKIni(KIniRoot* root, std::string file_path);
 
 #define KINI_H_INCLUDED
 
