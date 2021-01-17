@@ -1334,49 +1334,57 @@ bool parseKIni(KIniRoot* root, std::string file_path)
                 std::string curr_value = "";
 
                 uint16_t first_space = input.find(" ");
-                std::string prop = input.substr(0, first_space);
-                bool double_space = (input.at(first_space + 1) ==  ' ' ? true : false);
-                uint16_t curr_search_spot = 0;
-                uint8_t curr_ind = 0;
-                uint16_t occurence = 0;
-
-                if (double_space)
+                if (first_space == (uint16_t)std::string::npos)
                 {
-                    curr_search_spot = first_space + 2;
-                    occurence = input.find("  ", curr_search_spot);
-
-                    while (occurence != (uint16_t)std::string::npos)
-                    {
-                        multi[curr_ind] = input.substr(curr_search_spot, occurence-curr_search_spot-1); // this removes the comma
-
-                        curr_search_spot = occurence + 2;
-                        occurence = input.find("  ", curr_search_spot);
-                        curr_ind++;
-                    }
-
-                    multi[curr_ind] = input.substr(curr_search_spot);
-                    curr_ind++;
-
-                    curr_property = new KIniProperty(false, true, true, prop, "", nullptr, multi, curr_ind);
+                    // These are dumbfuck anomalous things that I don't think should be there at all but whatever lol
+                    curr_property = new KIniProperty(false, true, false, input, "", nullptr, nullptr, 0);
                 }
                 else
                 {
-                    curr_search_spot = first_space + 1;
-                    occurence = input.find(" ", curr_search_spot);
+                    std::string prop = input.substr(0, first_space);
+                    bool double_space = (input.at(first_space + 1) ==  ' ' ? true : false);
+                    uint16_t curr_search_spot = 0;
+                    uint8_t curr_ind = 0;
+                    uint16_t occurence = 0;
 
-                    while (occurence != (uint16_t)std::string::npos)
+                    if (double_space)
                     {
-                        multi[curr_ind] = input.substr(curr_search_spot, occurence-curr_search_spot);
+                        curr_search_spot = first_space + 2;
+                        occurence = input.find("  ", curr_search_spot);
 
-                        curr_search_spot = occurence + 1;
-                        occurence = input.find(" ", curr_search_spot);
+                        while (occurence != (uint16_t)std::string::npos)
+                        {
+                            multi[curr_ind] = input.substr(curr_search_spot, occurence-curr_search_spot-1); // this removes the comma
+
+                            curr_search_spot = occurence + 2;
+                            occurence = input.find("  ", curr_search_spot);
+                            curr_ind++;
+                        }
+
+                        multi[curr_ind] = input.substr(curr_search_spot);
                         curr_ind++;
+
+                        curr_property = new KIniProperty(false, true, true, prop, "", nullptr, multi, curr_ind);
                     }
+                    else
+                    {
+                        curr_search_spot = first_space + 1;
+                        occurence = input.find(" ", curr_search_spot);
 
-                    multi[curr_ind] = input.substr(curr_search_spot);
-                    curr_ind++;
+                        while (occurence != (uint16_t)std::string::npos)
+                        {
+                            multi[curr_ind] = input.substr(curr_search_spot, occurence-curr_search_spot);
 
-                    curr_property = new KIniProperty(false, true, false, prop, "", nullptr, multi, curr_ind);
+                            curr_search_spot = occurence + 1;
+                            occurence = input.find(" ", curr_search_spot);
+                            curr_ind++;
+                        }
+
+                        multi[curr_ind] = input.substr(curr_search_spot);
+                        curr_ind++;
+
+                        curr_property = new KIniProperty(false, true, false, prop, "", nullptr, multi, curr_ind);
+                    }
                 }
                 curr_instance->appendProperty(curr_property);
             }
