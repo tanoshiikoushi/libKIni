@@ -8,7 +8,7 @@ std::string KIniComment::toString()
 
 std::string KIniEvent::toString()
 {
-    std::string out = "";
+    std::string out = "  ";
     ListMember<KIniProperty>* index = getPropertyList();
 
     while (index != nullptr)
@@ -1300,7 +1300,7 @@ bool parseKIni(KIniRoot* root, std::string file_path)
                 curr_property->setIsEvent(true);
             }
 
-            curr_property = new KIniProperty(false, false, false, input.substr(0, input.find("=") - 1), input.substr(input.find("=") + 2), nullptr, nullptr, 0);
+            curr_property = new KIniProperty(false, false, false, input.substr(2, input.find("=") - 1), input.substr(input.find("=") + 2), nullptr, nullptr, 0);
             curr_event->appendProperty(curr_property);
             last_was_event = true;
         }
@@ -1366,7 +1366,7 @@ bool parseKIni(KIniRoot* root, std::string file_path)
 
                     while (occurence != (uint16_t)std::string::npos)
                     {
-                        multi[curr_ind] = input.substr(curr_search_spot, occurence-curr_search_spot); // this removes the comma
+                        multi[curr_ind] = input.substr(curr_search_spot, occurence-curr_search_spot);
 
                         curr_search_spot = occurence + 1;
                         occurence = input.find(" ", curr_search_spot);
