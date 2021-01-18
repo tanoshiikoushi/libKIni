@@ -10,13 +10,17 @@ project(libKIni VERSION ${lib_version}
 				
 add_subdirectory(src)
 
+configure_package_config_file(
+	libKIniConfig.cmake.in
+	libKIniConfig.cmake
+	INSTALL_DESTINATION lib/cmake/libKIni)
+
 write_basic_package_version_file(
 	libKIniConfigVersion.cmake
 	VERSION ${lib_version} 
 	COMPATIBILITY AnyNewerVersion)
 	
 install(TARGETS KIni 
-		LIBRARY DESTINATION lib 
 		ARCHIVE DESTINATION lib 
 		INCLUDES DESTINATION include
 		FILE libKIniConfig.cmake
