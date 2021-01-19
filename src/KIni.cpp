@@ -1245,7 +1245,7 @@ bool parseKIni(KIniRoot* root, std::string file_path)
 
     while (!file.eof())
     {
-        file.getline(read, KINI_BUFFER_IN_SIZE);
+        file.getline(read, KINI_BUFFER_IN_SIZE, '\n');
         input.assign(read);
 
         if (input.empty())
