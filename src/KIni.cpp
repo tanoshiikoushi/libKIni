@@ -8,11 +8,12 @@ std::string KIniComment::toString()
 
 std::string KIniEvent::toString()
 {
-    std::string out = "  ";
+    std::string out = "";
     ListMember<KIniProperty>* index = getPropertyList();
 
     while (index != nullptr)
     {
+        out.append("  ");
         if (index->isComment())
         {
             out.append(index->getCurrentComment()->toString());
