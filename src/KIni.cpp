@@ -1248,6 +1248,14 @@ bool parseKIni(KIniRoot* root, std::string file_path)
         file.getline(read, KINI_BUFFER_IN_SIZE, '\n');
         input.assign(read);
 
+        if (input.length() > 0)
+        {
+            if (input.at(input.length()-1) == '\r')
+            {
+                input = input.substr(0, input.length()-1);
+            }
+        }
+
         if (input.empty())
         {
             last_was_event = false;
